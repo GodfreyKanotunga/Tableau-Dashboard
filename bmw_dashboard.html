@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMW Global Sales Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #0a1628;
+    --blue:   #1a3a6b;
+    --mid:    #2e5fa3;
+    --accent: #4a90d9;
+    --gold:   #c9a84c;
+    --light:  #e8eef7;
+    --muted:  #8a9bb5;
+    --white:  #ffffff;
+    --bg:     #f4f6fb;
+    --card:   #ffffff;
+    --border: #dde4f0;
+    --green:  #2a9d5c;
+    --red:    #c0392b;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--navy);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--gold);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .bmw-logo {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: conic-gradient(#fff 0deg 90deg, #1c6bb5 90deg 180deg, #fff 180deg 270deg, #1c6bb5 270deg 360deg);
+    border: 3px solid var(--gold);
+    flex-shrink: 0;
+  }
+  .header-title h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .header-title p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .header-right {
+    text-align: right;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .disclaimer {
+    background: #1e2d45;
+    border-left: 3px solid var(--gold);
+    padding: 8px 40px;
+    font-size: 0.7rem;
+    color: #8a9bb5;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Layout ── */
+  main { padding: 28px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── KPI Row ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--mid);
+  }
+  .kpi-card.gold::before { background: var(--gold); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1;
+  }
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .kpi-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+  .badge-up { background: #e8f7ef; color: var(--green); }
+  .badge-neutral { background: #eef2fb; color: var(--mid); }
+
+  /* ── Chart Grid ── */
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-grid-full {
+    margin-bottom: 20px;
+  }
+
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .chart-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .chart-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .chart-subtitle {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .chart-tag {
+    font-size: 0.62rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--light);
+    color: var(--mid);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .chart-wrap { position: relative; }
+
+  /* ── Region table ── */
+  .region-table { width: 100%; border-collapse: collapse; }
+  .region-table tr { border-bottom: 1px solid var(--border); }
+  .region-table tr:last-child { border-bottom: none; }
+  .region-table td {
+    padding: 9px 4px;
+    font-size: 0.78rem;
+  }
+  .region-name { color: var(--navy); font-weight: 500; }
+  .region-bar-wrap { width: 120px; }
+  .region-bar-bg {
+    background: var(--light);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .region-bar { height: 100%; background: var(--mid); border-radius: 4px; }
+  .region-val { text-align: right; font-weight: 600; color: var(--navy); font-size: 0.78rem; }
+  .region-pct { text-align: right; color: var(--muted); font-size: 0.7rem; width: 36px; }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--navy);
+    color: var(--white);
+    border-color: var(--navy);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="bmw-logo"></div>
+    <div class="header-title">
+      <h1>BMW Global Sales Performance Dashboard</h1>
+      <p>Simulated Dataset · 2010–2024 · Portfolio Demonstration</p>
+    </div>
+  </div>
+  <div class="header-right">
+    Godfrey M. Kanotunga<br>
+    MSc Applied Data Science · Clarkson University<br>
+    Tools: Tableau · Python · Excel
+  </div>
+</header>
+
+<div class="disclaimer">
+  ⚠ &nbsp;This dashboard uses a <strong>synthetic dataset</strong> generated for analytical demonstration purposes. Revenue and volume figures do not reflect actual BMW AG financial results.
+</div>
+
+<main>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Fuel Type:</span>
+    <button class="filter-btn active" onclick="setFuel('All', this)">All</button>
+    <button class="filter-btn" onclick="setFuel('Petrol', this)">Petrol</button>
+    <button class="filter-btn" onclick="setFuel('Diesel', this)">Diesel</button>
+    <button class="filter-btn" onclick="setFuel('Hybrid', this)">Hybrid</button>
+    <button class="filter-btn" onclick="setFuel('Electric', this)">Electric</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card gold">
+      <div class="kpi-label">Total Units Sold</div>
+      <div class="kpi-value">253M</div>
+      <div class="kpi-sub">Across 6 global regions</div>
+      <span class="kpi-badge badge-neutral">2010–2024</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Vehicle Price</div>
+      <div class="kpi-value">$75K</div>
+      <div class="kpi-sub">Across all models & regions</div>
+      <span class="kpi-badge badge-up">↑ Premium Segment</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Region</div>
+      <div class="kpi-value">Asia</div>
+      <div class="kpi-sub">Highest revenue market</div>
+      <span class="kpi-badge badge-up">16.7% share</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Model</div>
+      <div class="kpi-value">7 Series</div>
+      <div class="kpi-sub">Highest revenue generator</div>
+      <span class="kpi-badge badge-neutral">9.4% of total</span>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">EV + Hybrid Share</div>
+      <div class="kpi-value">49.8%</div>
+      <div class="kpi-sub">Electric + Hybrid combined</div>
+      <span class="kpi-badge badge-up">↑ Electrification</span>
+    </div>
+  </div>
+
+  <!-- Row 1: Yearly Trend + Region Revenue -->
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Sales Volume Trend by Fuel Type</div>
+          <div class="chart-subtitle">Annual units sold across all regions (2010–2024)</div>
+        </div>
+        <span class="chart-tag">Time Series</span>
+      </div>
+      <div class="chart-wrap"><canvas id="trendChart" height="200"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue by Region</div>
+          <div class="chart-subtitle">Simulated revenue share</div>
+        </div>
+        <span class="chart-tag">Regional</span>
+      </div>
+      <table class="region-table" id="regionTable">
+        <tbody>
+          <tr>
+            <td class="region-name">Asia</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:100%"></div></div></td>
+            <td class="region-val">$3.25T</td>
+            <td class="region-pct">16.7%</td>
+          </tr>
+          <tr>
+            <td class="region-name">Europe</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:98%"></div></div></td>
+            <td class="region-val">$3.19T</td>
+            <td class="region-pct">16.4%</td>
+          </tr>
+          <tr>
+            <td class="region-name">N. America</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:98%"></div></div></td>
+            <td class="region-val">$3.18T</td>
+            <td class="region-pct">16.3%</td>
+          </tr>
+          <tr>
+            <td class="region-name">Middle East</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:97%"></div></div></td>
+            <td class="region-val">$3.17T</td>
+            <td class="region-pct">16.2%</td>
+          </tr>
+          <tr>
+            <td class="region-name">S. America</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:96%"></div></div></td>
+            <td class="region-val">$3.11T</td>
+            <td class="region-pct">16.0%</td>
+          </tr>
+          <tr>
+            <td class="region-name">Africa</td>
+            <td class="region-bar-wrap"><div class="region-bar-bg"><div class="region-bar" style="width:96%"></div></div></td>
+            <td class="region-val">$3.11T</td>
+            <td class="region-pct">15.9%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px; font-size:0.67rem; color:var(--muted)">Note: Near-uniform distribution reflects synthetic data generation methodology.</div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Fuel Type Mix</div>
+          <div class="chart-subtitle">Revenue share by powertrain</div>
+        </div>
+        <span class="chart-tag">Mix</span>
+      </div>
+      <div class="chart-wrap"><canvas id="fuelChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Model Revenue + Avg Price + Color -->
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue by Model</div>
+          <div class="chart-subtitle">Simulated cumulative revenue 2010–2024</div>
+        </div>
+        <span class="chart-tag">Model</span>
+      </div>
+      <div class="chart-wrap"><canvas id="modelChart" height="220"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Average Price by Model</div>
+          <div class="chart-subtitle">Mean listing price (USD) across all transactions</div>
+        </div>
+        <span class="chart-tag">Pricing</span>
+      </div>
+      <div class="chart-wrap"><canvas id="priceChart" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Color + Transmission -->
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Sales Volume by Color</div>
+          <div class="chart-subtitle">Consumer color preference distribution</div>
+        </div>
+        <span class="chart-tag">Preference</span>
+      </div>
+      <div class="chart-wrap"><canvas id="colorChart" height="160"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Transmission Split</div>
+          <div class="chart-subtitle">Automatic vs Manual across all models</div>
+        </div>
+        <span class="chart-tag">Spec</span>
+      </div>
+      <div class="chart-wrap"><canvas id="transChart" height="160"></canvas></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  BMW Global Sales Performance Dashboard · Godfrey M. Kanotunga · MSc Applied Data Science, Clarkson University ·
+  Synthetic dataset for portfolio demonstration · Built with Chart.js
+</footer>
+
+<script>
+const NAVY  = '#0a1628';
+const BLUE  = '#1a3a6b';
+const MID   = '#2e5fa3';
+const ACC   = '#4a90d9';
+const GOLD  = '#c9a84c';
+const MUTED = '#8a9bb5';
+const LIGHT = '#e8eef7';
+const GREEN = '#2a9d5c';
+
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.color = MUTED;
+
+// ── Trend Chart ──────────────────────────────────────────────────────────────
+const years = [2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024];
+
+const fyData = {
+  Diesel:   [4086808,4019361,4087221,4198426,4527336,4193633,4262129,4031905,3892638,4099576,4152177,4137203,4474126,3842804,4356475],
+  Electric: [4205554,4345538,4242466,4117556,4022785,4215113,4199882,4116302,4325544,4184558,3962571,4239630,4383912,4305554,4290700],
+  Hybrid:   [4415611,4222305,4347806,4278494,4434340,4307029,4111145,4219927,4021011,4461759,4032718,4331469,4687463,4013825,4647195],
+  Petrol:   [4225472,4171737,4074402,4272257,3974499,4294432,4384394,4252677,4173080,4446063,4163377,4176364,4375445,4106471,4233484]
+};
+
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [
+      { label: 'Petrol',   data: fyData.Petrol,   borderColor: NAVY,  backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+      { label: 'Diesel',   data: fyData.Diesel,   borderColor: MID,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+      { label: 'Hybrid',   data: fyData.Hybrid,   borderColor: GOLD,  backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+      { label: 'Electric', data: fyData.Electric, borderColor: GREEN, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: '#eef2fb' },
+        ticks: {
+          font: { size: 10 },
+          callback: v => (v/1e6).toFixed(1) + 'M'
+        }
+      }
+    }
+  }
+});
+
+// ── Fuel Donut ───────────────────────────────────────────────────────────────
+const fuelCtx = document.getElementById('fuelChart').getContext('2d');
+new Chart(fuelCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Hybrid', 'Petrol', 'Electric', 'Diesel'],
+    datasets: [{
+      data: [4820671669300, 4756136615908, 4750735161530, 4684699087721],
+      backgroundColor: [GOLD, NAVY, GREEN, MID],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '60%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            return ` ${ctx.label}: ${(ctx.parsed / total * 100).toFixed(1)}%`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// ── Model Revenue Bar ─────────────────────────────────────────────────────────
+const modelCtx = document.getElementById('modelChart').getContext('2d');
+new Chart(modelCtx, {
+  type: 'bar',
+  data: {
+    labels: ['7 Series','3 Series','i8','X1','5 Series','i3','X5','X3','M5','X6','M3'],
+    datasets: [{
+      label: 'Simulated Revenue',
+      data: [1790070249282,1768534028214,1764743448529,1752985285361,1735712423092,1724197530210,1708653383772,1707951188482,1698467355916,1693423254979,1667504386622],
+      backgroundColor: [GOLD, MID, MID, MID, MID, MID, MID, MID, MID, MID, MID],
+      borderRadius: 4, borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` $${(ctx.parsed.x / 1e12).toFixed(2)}T (simulated)`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#eef2fb' },
+        ticks: { callback: v => '$' + (v/1e12).toFixed(1) + 'T', font: { size: 10 } }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+// ── Avg Price Bar ─────────────────────────────────────────────────────────────
+const priceCtx = document.getElementById('priceChart').getContext('2d');
+new Chart(priceCtx, {
+  type: 'bar',
+  data: {
+    labels: ['7 Series','3 Series','i8','5 Series','X1','X3','M3','i3','X5','M5','X6'],
+    datasets: [{
+      label: 'Avg Price (USD)',
+      data: [75570,75566,75366,75288,75262,75017,74842,74800,74708,74475,74435],
+      backgroundColor: NAVY,
+      borderRadius: 4, borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString()}` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 30 } },
+      y: {
+        grid: { color: '#eef2fb' },
+        min: 73000,
+        ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Color Bar ─────────────────────────────────────────────────────────────────
+const colorCtx = document.getElementById('colorChart').getContext('2d');
+new Chart(colorCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Red','Silver','White','Grey','Blue','Black'],
+    datasets: [{
+      label: 'Units',
+      data: [42750183,42674022,42272954,41995141,41972741,41710693],
+      backgroundColor: ['#c0392b','#bdc3c7','#ecf0f1','#7f8c8d','#2980b9','#2c3e50'],
+      borderRadius: 4, borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${(ctx.parsed.y/1e6).toFixed(1)}M units` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        grid: { color: '#eef2fb' },
+        min: 40000000,
+        ticks: { callback: v => (v/1e6).toFixed(0) + 'M', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Transmission Donut ────────────────────────────────────────────────────────
+const transCtx = document.getElementById('transChart').getContext('2d');
+new Chart(transCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Manual','Automatic'],
+    datasets: [{
+      data: [127362077, 126013657],
+      backgroundColor: [NAVY, ACC],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '65%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 12 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            return ` ${ctx.label}: ${(ctx.parsed / total * 100).toFixed(1)}%`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// ── Fuel Filter ───────────────────────────────────────────────────────────────
+function setFuel(fuel, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (fuel === 'All') {
+    trendChart.data.datasets.forEach(ds => ds.hidden = false);
+  } else {
+    trendChart.data.datasets.forEach(ds => {
+      ds.hidden = ds.label !== fuel;
+    });
+  }
+  trendChart.update();
+}
+</script>
+</body>
+</html>
